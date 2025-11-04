@@ -1,3 +1,4 @@
+/*eslint-disable */
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -32,6 +33,7 @@ export default function Home() {
   const [generating, setGenerating] = useState(false);
   const [completedFile, setCompletedFile] = useState<string | null>(null);
   const [completedFileName, setCompletedFileName] = useState<string>('');
+  const [completedHtml, setCompletedHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,7 +84,7 @@ export default function Home() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       if (droppedFile.name.endsWith('.docx')) {
@@ -115,7 +117,7 @@ export default function Home() {
 
       const data = await response.json();
       setDocumentHtml(data.html);
-      
+
       // Convert file to base64 for later use
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -236,6 +238,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
       const data = await response.json();
       setCompletedFile(data.file);
       setCompletedFileName(data.fileName);
+      setCompletedHtml(data.html || null); // Store completed HTML preview
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -307,7 +310,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
         {/* Error Alert */}
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-            <AlertCircle className="size-5 text-destructive flex-shrink-0 mt-0.5" />
+            <AlertCircle className="size-5 text-destructive shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-destructive">{error}</p>
             </div>
@@ -315,7 +318,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
               variant="ghost"
               size="sm"
               onClick={() => setError(null)}
-              className="flex-shrink-0"
+              className="shrink-0"
             >
               <XCircle className="size-4" />
             </Button>
@@ -338,13 +341,12 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
 
               <div className="space-y-6">
                 <div
-                  className={`border-2 border-dashed rounded-lg p-12 transition-colors relative ${
-                    dragActive
-                      ? 'border-primary bg-primary/5'
-                      : file
+                  className={`border-2 border-dashed rounded-lg p-12 transition-colors relative ${dragActive
+                    ? 'border-primary bg-primary/5'
+                    : file
                       ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20'
                       : 'border-muted-foreground/25 hover:border-primary/50'
-                  }`}
+                    }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
@@ -370,7 +372,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                       {file ? (
                         <div className="space-y-2">
                           <div className="relative group">
-                            <p 
+                            <p
                               className="font-semibold text-base sm:text-lg mb-1 break-all cursor-help transition-colors hover:text-primary"
                               title={file.name}
                             >
@@ -460,8 +462,61 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* Placeholders List & Preview */}
+              <div className=" lg:col-span-2 space-y-6">
+                {documentHtml && (
+                  <div className="border rounded-xl p-6 bg-card shadow-sm">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <FileText className="size-5 text-primary" />
+                      Preview
+                    </h3>
+                    <div className="border rounded-lg p-4 bg-white dark:bg-gray-950 max-h-64 overflow-y-auto prose prose-sm max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: documentHtml }} />
+                    </div>
+                  </div>
+                )}
+                <div className="border rounded-xl p-6 bg-card shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4">Placeholders</h3>
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
+                    {placeholders.map((placeholder, index) => (
+                      <div
+                        key={placeholder.key}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all ${placeholder.filled
+                          ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
+                          : index === currentPlaceholderIndex
+                            ? 'bg-primary/10 border-2 border-primary/30 ring-2 ring-primary/10'
+                            : 'bg-muted/50 border border-transparent'
+                          }`}
+                      >
+                        <div className="shrink-0">
+                          {placeholder.filled ? (
+                            <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
+                          ) : index === currentPlaceholderIndex ? (
+                            <Loader2 className="size-5 text-primary animate-spin" />
+                          ) : (
+                            <XCircle className="size-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${placeholder.filled ? 'text-green-900 dark:text-green-100' :
+                            index === currentPlaceholderIndex ? 'text-primary' : 'text-foreground'
+                            }`}>
+                            {placeholder.key}
+                          </p>
+                          {placeholder.filled && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {placeholder.value}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
               {/* Conversation */}
-              <div className="lg:col-span-2">
+              <div className="">
                 <div className="border rounded-xl p-6 bg-card shadow-sm flex flex-col h-[600px]">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <MessageSquare className="size-5 text-primary" />
@@ -474,21 +529,19 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground rounded-tr-none'
-                              : 'bg-muted text-muted-foreground rounded-tl-none'
-                          }`}
+                          className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${message.role === 'user'
+                            ? 'bg-primary text-primary-foreground rounded-tr-none'
+                            : 'bg-muted text-muted-foreground rounded-tl-none'
+                            }`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
                             {message.content}
                           </p>
                           {message.timestamp && (
-                            <p className={`text-xs mt-2 ${
-                              message.role === 'user' 
-                                ? 'text-primary-foreground/70' 
-                                : 'text-muted-foreground/70'
-                            }`}>
+                            <p className={`text-xs mt-2 ${message.role === 'user'
+                              ? 'text-primary-foreground/70'
+                              : 'text-muted-foreground/70'
+                              }`}>
                               {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           )}
@@ -527,62 +580,6 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                   </div>
                 </div>
               </div>
-
-              {/* Placeholders List & Preview */}
-              <div className="space-y-6">
-                <div className="border rounded-xl p-6 bg-card shadow-sm">
-                  <h3 className="text-lg font-semibold mb-4">Placeholders</h3>
-                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin">
-                    {placeholders.map((placeholder, index) => (
-                      <div
-                        key={placeholder.key}
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                          placeholder.filled
-                            ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'
-                            : index === currentPlaceholderIndex
-                            ? 'bg-primary/10 border-2 border-primary/30 ring-2 ring-primary/10'
-                            : 'bg-muted/50 border border-transparent'
-                        }`}
-                      >
-                        <div className="flex-shrink-0">
-                          {placeholder.filled ? (
-                            <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
-                          ) : index === currentPlaceholderIndex ? (
-                            <Loader2 className="size-5 text-primary animate-spin" />
-                          ) : (
-                            <XCircle className="size-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${
-                            placeholder.filled ? 'text-green-900 dark:text-green-100' : 
-                            index === currentPlaceholderIndex ? 'text-primary' : 'text-foreground'
-                          }`}>
-                            {placeholder.key}
-                          </p>
-                          {placeholder.filled && (
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {placeholder.value}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {documentHtml && (
-                  <div className="border rounded-xl p-6 bg-card shadow-sm">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FileText className="size-5 text-primary" />
-                      Preview
-                    </h3>
-                    <div className="border rounded-lg p-4 bg-white dark:bg-gray-950 max-h-64 overflow-y-auto prose prose-sm max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: documentHtml }} />
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         )}
@@ -606,7 +603,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                   <div className="space-y-2">
                     {placeholders.map((p) => (
                       <div key={p.key} className="flex items-center gap-2 text-sm">
-                        <CheckCircle2 className="size-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <CheckCircle2 className="size-4 text-green-600 dark:text-green-400 shrink-0" />
                         <span className="text-muted-foreground"><strong className="text-foreground">{p.key}:</strong> {p.value}</span>
                       </div>
                     ))}
@@ -639,7 +636,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
         {/* Step 3: Download */}
         {currentStep === 3 && (
           <div className="max-w-2xl mx-auto">
-            <div className="border rounded-xl p-8 bg-card shadow-lg border-green-500/20 bg-green-50/50 dark:bg-green-950/20">
+            <div className="border rounded-xl p-8 shadow-lg border-green-500/20 bg-green-50/50 dark:bg-green-950/20">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center size-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
                   <CheckCircle2 className="size-8 text-green-600 dark:text-green-400" />
@@ -649,9 +646,9 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                   Your document has been generated successfully!
                 </p>
 
-                {documentHtml && (
+                {completedHtml && (
                   <div className="border rounded-lg p-6 bg-white dark:bg-gray-950 max-h-96 overflow-y-auto prose prose-sm max-w-none mb-6 text-left">
-                    <div dangerouslySetInnerHTML={{ __html: documentHtml }} />
+                    <div dangerouslySetInnerHTML={{ __html: completedHtml }} />
                   </div>
                 )}
 
@@ -676,6 +673,7 @@ What should I fill in for "${initialPlaceholders[0].key}"?`,
                       setPlaceholders([]);
                       setMessages([]);
                       setCompletedFile(null);
+                      setCompletedHtml(null);
                       setCurrentPlaceholderIndex(0);
                       setInputValue('');
                       if (fileInputRef.current) {

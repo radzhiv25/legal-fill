@@ -23,20 +23,30 @@ export async function POST(request: NextRequest) {
     // Convert base64 back to buffer
     const buffer = Buffer.from(originalFile, 'base64');
 
+    // Convert original document to HTML for preview
+    const htmlResult = await mammoth.convertToHtml({ buffer });
+    let completedHtml = htmlResult.value;
+
     // Extract text from original document
     const textResult = await mammoth.extractRawText({ buffer });
     let text = textResult.value;
 
-    // Replace placeholders with values
+    // Replace placeholders with values in both HTML and text
     Object.entries(placeholders).forEach(([key, value]) => {
       const valueStr = String(value || '');
       // Escape special regex characters in key
       const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       // Replace various placeholder formats
-      text = text
-        .replace(new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'g'), valueStr)
-        .replace(new RegExp(`\\[\\s*${escapedKey}\\s*\\]`, 'g'), valueStr)
-        .replace(new RegExp(`\\{\\s*${escapedKey}\\s*\\}`, 'g'), valueStr);
+      const placeholderPatterns = [
+        new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'g'),
+        new RegExp(`\\[\\s*${escapedKey}\\s*\\]`, 'g'),
+        new RegExp(`\\{\\s*${escapedKey}\\s*\\}`, 'g'),
+      ];
+      
+      placeholderPatterns.forEach(pattern => {
+        text = text.replace(pattern, valueStr);
+        completedHtml = completedHtml.replace(pattern, valueStr);
+      });
     });
 
     // Create new document with replaced text
@@ -93,6 +103,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       file: base64,
       fileName: outputFileName,
+      html: completedHtml, // Return completed HTML for preview
     });
   } catch (error) {
     console.error('Error generating document:', error);

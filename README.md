@@ -4,14 +4,14 @@ A web application that allows users to upload legal document templates (`.docx` 
 
 ## Features
 
-- 📄 **Document Upload**: Upload `.docx` files with template placeholders
-- 🔍 **Placeholder Detection**: Automatically identifies placeholders in various formats:
+- **Document Upload**: Upload `.docx` files with template placeholders
+- **Placeholder Detection**: Automatically identifies placeholders in various formats:
   - `{{placeholder}}`
   - `[placeholder]`
   - `{placeholder}`
-- 💬 **Conversational Interface**: Fill in placeholders one by one through a chat-like interface
-- 👁️ **Document Preview**: Preview the original document while filling in placeholders
-- 📥 **Download Completed Document**: Download the filled document as a new `.docx` file
+- **Conversational Interface**: Fill in placeholders one by one through a chat-like interface
+- **Document Preview**: Preview the original document while filling in placeholders
+- **Download Completed Document**: Download the filled document as a new `.docx` file
 
 ## Tech Stack
 
