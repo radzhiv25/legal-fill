@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node api.js && next dev",
-    "build": "node api.js && next build",
-    "start": "node api.js && next start",
+    "dev": "node init && next dev",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "lint": "eslint"
   },
   "dependencies": {
@@ -16,7 +16,7 @@
     "docx": "^9.5.1",
     "lucide-react": "^0.552.0",
     "mammoth": "^1.11.0",
-    "next": "16.0.10",
+    "next": "16.4.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^3.3.1"
